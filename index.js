@@ -62,6 +62,7 @@ class ProjectList {
 const page = (() => {
     let projects = new ProjectList(new Project('Project 1'));
 
+    // Takes in a ToDoItem object and returns an HTML component for it.
     const toDoComponentFactory = (todo) => {
         const component = document.createElement('div');
 
@@ -75,6 +76,40 @@ const page = (() => {
         return component;
     }
 
+    // Takes in a Project object and returns an HTML component for it.
+    const projectComponentFactory = (proj) => {
+        const component = document.createElement('div');
+        
+        const title = document.createElement('h2');
+        title.textContent = proj.name;
+
+        component.append(title);
+        
+        component.addEventListener('click', () => {
+
+        });
+
+        return component;
+    }
+
+    // Returns the task list as a component.
+    const taskListDisplay = () => {
+        const listContainer = document.createElement('div');
+
+        const taskList = document.createElement('ul');
+        taskList.id = "task-list";
+
+        listContainer.append(taskList);
+        return listContainer;
+    }
+
+    // Appends an array of ToDoItem components to the task list component.
+    const appendTasks = (...args) => {
+        const taskList = document.querySelector('#task-list');
+        taskList.append(...args);
+    }
+
+    // Returns the project list as a component.
     const projectListDisplay = () => {
         const listContainer = document.createElement('div');
         listContainer.id = 'list-container';
@@ -87,17 +122,15 @@ const page = (() => {
         all.textContent = 'All';
 
         all.addEventListener('click', () => {
-            const taskList = document.querySelector('#task-list');
-            Project.all_todos.forEach((todo) => {
-                
-            });
-        })
+            appendTasks(Project.all_todos);
+        });
 
         list.append(all);
 
-        this.projects.list.forEach((project) => {
+        projects.list.forEach((project) => {
             const listItem = document.createElement('li');
             listItem.textContent = project.name;
+            listItem.addEventListener
             list.append(listItem);
         });
     }
