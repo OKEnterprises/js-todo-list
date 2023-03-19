@@ -16,12 +16,12 @@ class Project {
     static allTodos = [];
     static numProjects = 0;
     todos = [];
-    name = `Project ${num_projects}`;
+    name = "Projecty";
 
     //New Projects can be initialized with todos.
     constructor(name, ...args) {
         this.name = name;
-        this.allTodos = this.allTodos.concat(args);
+        this.allTodos = Project.allTodos.concat(args);
         this.todos = args;
         this.numProjects++;
     }
@@ -46,7 +46,7 @@ class ProjectList {
     list = [];
 
     constructor(...args) {
-        this.list = args;
+        this.list = [...args];
     }
 
     add(project) {
@@ -60,7 +60,16 @@ class ProjectList {
 }
 
 const page = (() => {
-    let projects = new ProjectList(new Project('Project 1'));
+    let defaultProject = new Project('Project 1');
+    let todo = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
+    defaultProject.add(todo);
+    let projects = new ProjectList(defaultProject);
+
+    // Appends an array of ToDoItem components to the task list component.
+    const appendTasks = (...args) => {
+        const taskList = document.querySelector('#task-list');
+        taskList.append(...args);
+    }
 
     // Takes in a ToDoItem object and returns an HTML component for it.
     const toDoComponentFactory = (todo) => {
@@ -80,13 +89,13 @@ const page = (() => {
     const projectComponentFactory = (proj) => {
         const component = document.createElement('div');
         
-        const title = document.createElement('h2');
-        title.textContent = proj.name;
+        // const title = document.createElement('h2');
+        component.textContent = proj.name;
 
-        component.append(title);
+        // component.append(title);
         
         component.addEventListener('click', () => {
-
+            appendTasks(proj.todos);
         });
 
         return component;
@@ -103,41 +112,34 @@ const page = (() => {
         return listContainer;
     }
 
-    // Appends an array of ToDoItem components to the task list component.
-    const appendTasks = (...args) => {
-        const taskList = document.querySelector('#task-list');
-        taskList.append(...args);
-    }
-
     // Returns the project list as a component.
     const projectListDisplay = () => {
         const listContainer = document.createElement('div');
         listContainer.id = 'list-container';
 
-        const list = document.createElement('ul')
+        const list = document.createElement('ul');
         list.id = 'list';
 
-        const all = document.createElement('li')
+        const all = document.createElement('li');
         all.id = 'all';
         all.textContent = 'All';
 
         all.addEventListener('click', () => {
-            appendTasks(Project.all_todos);
+            appendTasks(...Project.all_todos);
         });
 
         list.append(all);
 
-        projects.list.forEach((project) => {
-            const listItem = document.createElement('li');
-            listItem.textContent = project.name;
-            listItem.addEventListener
-            list.append(listItem);
+        projects.list.forEach((proj) => {
+            list.append(projectComponentFactory(proj));
         });
+
+        listContainer.append(list);
+        return listContainer;
     }
 
     const render = () => {
-        const content = document.querySelector('#content');
-        content.append(taskListDisplay(), projectListDisplay());
+        document.body.append(taskListDisplay(), projectListDisplay());
         console.log("Rendered!");
     }
 

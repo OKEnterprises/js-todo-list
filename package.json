@@ -2,7 +2,7 @@
   "name": "js-todo-list",
   "version": "1.0.0",
   "description": "JS Todo List",
-  "main": "index.js",
+  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,6 +19,10 @@
   "homepage": "https://github.com/OKEnterprises/js-todo-list#readme",
   "devDependencies": {
     "webpack": "^5.76.2",
-    "webpack-cli": "^5.0.1"
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.13.1"
+  },
+  "dependencies": {
+    "html-webpack-plugin": "^5.5.0"
   }
 }
