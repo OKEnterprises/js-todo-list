@@ -54,26 +54,27 @@ class ProjectList {
     }
 
     remove(project) {
-        const index = this.todos.indexOf(item);
+        const index = this.todos.indexOf(project);
         this.list.splice(index, 1);
     }
 }
 
 const page = (() => {
     let defaultProject = new Project('Project 1');
-    let todo = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
+    let todo = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', 3);
     defaultProject.add(todo);
     let projects = new ProjectList(defaultProject);
 
     // Appends an array of ToDoItem components to the task list component.
-    const appendTasks = (...args) => {
+    const appendTasks = (comps) => {
         const taskList = document.querySelector('#task-list');
-        taskList.append(...args);
+        taskList.append(...comps);
     }
 
     // Takes in a ToDoItem object and returns an HTML component for it.
     const toDoComponentFactory = (todo) => {
-        const component = document.createElement('div');
+        const component = document.createElement('li');
+        const container = document.createElement('div');
 
         const title = document.createElement('div');
         title.textContent = todo.title;
@@ -82,21 +83,28 @@ const page = (() => {
         dueDate.textContent = todo.dueDate;
 
         component.append(title, dueDate);
+        container.append(component);
         return component;
+    }
+
+    // Takes in a variable number of ToDoItems and returns an array of HTML components.
+    const toDoComponentArray = (...args) => {
+        res = [];
+        [...args].forEach((todo) => {
+            res.push(toDoComponentFactory(todo));
+        });
+        return res;
     }
 
     // Takes in a Project object and returns an HTML component for it.
     const projectComponentFactory = (proj) => {
-        const component = document.createElement('div');
-        
-        // const title = document.createElement('h2');
+        const component = document.createElement('li');
+        component.id = proj.name;
         component.textContent = proj.name;
 
-        // component.append(title);
-        
         component.addEventListener('click', () => {
-            appendTasks(proj.todos);
-        });
+            appendTasks(toDoComponentArray(proj.todos));
+        }); // BUG: Click appends [Object object] to taskList
 
         return component;
     }
@@ -125,7 +133,7 @@ const page = (() => {
         all.textContent = 'All';
 
         all.addEventListener('click', () => {
-            appendTasks(...Project.all_todos);
+            appendTasks(toDoComponentArray(Project.allTodos));
         });
 
         list.append(all);
@@ -140,13 +148,17 @@ const page = (() => {
 
     const render = () => {
         document.body.append(taskListDisplay(), projectListDisplay());
-        console.log("Rendered!");
     }
 
-    return {toDoComponentFactory, projectComponentFactory, taskListDisplay, appendTasks, projectListDisplay, render};
+    return {
+            toDoComponentFactory,
+            toDoComponentArray,
+            projectComponentFactory,
+            taskListDisplay, 
+            appendTasks, 
+            projectListDisplay, 
+            render,
+        };
 })();
 
 page.render();
-
-
-
