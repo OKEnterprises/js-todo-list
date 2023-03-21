@@ -1,3 +1,5 @@
+import './style.css';
+
 class ToDoItem {
     title;
     description;
@@ -89,7 +91,7 @@ const page = (() => {
 
     // Takes in a variable number of ToDoItems and returns an array of HTML components.
     const toDoComponentArray = (...args) => {
-        res = [];
+        let res = [];
         [...args].forEach((todo) => {
             res.push(toDoComponentFactory(todo));
         });
@@ -112,6 +114,7 @@ const page = (() => {
     // Returns the task list as a component.
     const taskListDisplay = () => {
         const listContainer = document.createElement('div');
+        listContainer.classList.add('list-container');
 
         const taskList = document.createElement('ul');
         taskList.id = "task-list";
@@ -123,7 +126,7 @@ const page = (() => {
     // Returns the project list as a component.
     const projectListDisplay = () => {
         const listContainer = document.createElement('div');
-        listContainer.id = 'list-container';
+        listContainer.classList.add('list-container');
 
         const list = document.createElement('ul');
         list.id = 'list';
