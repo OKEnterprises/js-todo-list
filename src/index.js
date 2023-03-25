@@ -91,7 +91,7 @@ const page = (() => {
 
     // Takes in a variable number of ToDoItems and returns an array of HTML components.
     const toDoComponentArray = (...args) => {
-        let res = [];
+        letres = [];
         [...args].forEach((todo) => {
             res.push(toDoComponentFactory(todo));
         });
@@ -106,7 +106,7 @@ const page = (() => {
 
         component.addEventListener('click', () => {
             appendTasks(toDoComponentArray(proj.todos));
-        }); // BUG: Click appends [Object object] to taskList
+        }); 
 
         return component;
     }
