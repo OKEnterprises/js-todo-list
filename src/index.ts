@@ -1,5 +1,5 @@
-import toDate from 'date-fns/toDate';
 import './style.css';
+import * as dfns from 'date-fns';
 
 class ToDoItem {
     title: string;
@@ -62,27 +62,14 @@ class ProjectList {
     }
 }
 
+interface ProjectComponent extends HTMLLIElement {}
+interface ToDoComponent extends HTMLLIElement {} 
+
 const page = (() => {
     let defaultProject: Project = new Project('Project 1');
     let todo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', 3);
     defaultProject.add(todo);
     let projects: ProjectList = new ProjectList(defaultProject);
-
-    // Returns the task list as a component.
-    const taskListDisplay = (): HTMLDivElement => {
-        const listContainer: HTMLDivElement = document.createElement('div');
-        listContainer.classList.add('list-container');
-
-        const taskList: HTMLUListElement = document.createElement('ul');
-        taskList.id = "task-list";
-
-        listContainer.append(taskList);
-        return listContainer;
-    }
-
-    // Select the document's body and add the task list display.
-    const body = document.querySelector('body')!;
-    body.append(taskListDisplay());
 
     // Appends an array of ToDoItem components to the task list component.
     const appendTasks = (...comps: Node[]) => {
@@ -91,7 +78,7 @@ const page = (() => {
     }
 
     // Takes in a ToDoItem object and returns an HTML component for it.
-    const toDoComponentFactory = (todo: ToDoItem): HTMLLIElement => {
+    const toDoComponentFactory = (todo: ToDoItem): ToDoComponent => {
         const component: HTMLLIElement = document.createElement('li');
         const container: HTMLDivElement = document.createElement('div');
 
@@ -112,7 +99,7 @@ const page = (() => {
     }
 
     // Takes in a Project object and returns an HTML component for it.
-    const projectComponentFactory = (proj: Project): HTMLLIElement => {
+    const projectComponentFactory = (proj: Project): ProjectComponent => {
         const component = document.createElement('li');
         component.id = proj.name;
         component.textContent = proj.name;
@@ -122,6 +109,18 @@ const page = (() => {
         }); 
 
         return component;
+    }
+
+     // Returns the task list as a component.
+     const taskListDisplay = (): HTMLDivElement => {
+        const listContainer: HTMLDivElement = document.createElement('div');
+        listContainer.classList.add('list-container');
+
+        const taskList: HTMLUListElement = document.createElement('ul');
+        taskList.id = "task-list";
+
+        listContainer.append(taskList);
+        return listContainer;
     }
 
     // Returns the project list as a component.
@@ -143,7 +142,7 @@ const page = (() => {
 
         list.append(all);
 
-        // 
+        // Creates and appends a project component for 
         projects.list.forEach((proj: Project) => {
             list.append(projectComponentFactory(proj));
         });
