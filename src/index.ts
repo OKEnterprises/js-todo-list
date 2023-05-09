@@ -63,7 +63,7 @@ class ProjectList {
 }
 
 interface ProjectComponent extends HTMLLIElement {}
-interface ToDoComponent extends HTMLLIElement {} 
+interface ToDoComponent extends HTMLLIElement {}
 
 const page = (() => {
     let defaultProject: Project = new Project('Project 1');
