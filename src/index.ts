@@ -7,7 +7,7 @@ console.log("index.ts loaded");
 // Takes in an item and a list.
 // Returns a copy of list with the first instance of the item removed.
 // If the list does not contain the item, returns the list unaltered.
-function remove(list: any[], item: any): any[] {
+function removeFromList(list: any[], item: any): any[] {
     let retVal = [...list];
     const index: number = retVal.indexOf(item);
     if (index < 0) return list;
@@ -39,7 +39,7 @@ class Project {
     constructor(name: string, ...toDos: ToDoItem[]) {
         this.name = name;
         Project.allToDos = Project.allToDos.concat(toDos);
-        this.toDos = toDos;
+        this.toDos = [...toDos];
         Project.numProjects++;
     }
 
@@ -51,11 +51,8 @@ class Project {
 
     //Removes a given ToDoItem from both todos and all_todos.
     remove(item: ToDoItem) {
-        const all_index = Project.allToDos.indexOf(item);
-        Project.allToDos.splice(all_index, 1);
-
-        const index = this.toDos.indexOf(item);
-        this.toDos.splice(index, 1);
+        Project.allToDos = removeFromList(Project.allToDos, item);
+        this.toDos = removeFromList(this.toDos, item);
     }
 }
 
@@ -67,8 +64,8 @@ interface NewTaskFormComponent extends HTMLFormElement {};
 const page = (() => {
     let defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
     let defaultProject: Project = new Project('Project 1', defaultToDo);
-    let allProjects: Map<string, Project> = new Map();
-    allProjects.set(defaultProject.name, defaultProject);
+    let allProjectsMap: Map<string, Project> = new Map();
+    allProjectsMap.set(defaultProject.name, defaultProject);
     let selectedProjectName: string = defaultProject.name;
 
     const BODY = document.querySelector('body')!;
@@ -96,8 +93,14 @@ const page = (() => {
         const dueDate: HTMLDivElement = document.createElement('div');
         dueDate.textContent = toDo.dueDate.toDateString();
 
-        component.append(title, dueDate);
-        container.append(component);
+        component.addEventListener('click', () => {
+            let pr: Project = allProjectsMap.get(selectedProjectName);
+            pr.remove(toDo);
+            component.remove();
+        });
+
+        container.append(title, dueDate);
+        component.append(container);
         return component;
     }
 
@@ -157,7 +160,7 @@ const page = (() => {
         list.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        let pl: Project[] = [...allProjects.values()];
+        let pl: Project[] = [...allProjectsMap.values()];
         list.append(...projectComponentArray(...pl)); 
 
         listContainer.append(list);
@@ -208,7 +211,7 @@ const page = (() => {
         submit.textContent = 'Submit';
         submit.addEventListener('click', () => {
             let toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
-            let proj: Project = allProjects.get(selectedProjectName);
+            let proj: Project = allProjectsMap.get(selectedProjectName);
             proj.add(toDo);
             render();
         });
@@ -234,7 +237,7 @@ const page = (() => {
     }
 
     return {
-            allProjects,
+            allProjects: allProjectsMap,
             appendTasks,
             toDoComponentFactory,
             toDoComponentArray,
