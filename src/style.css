@@ -1,5 +1,5 @@
 .list-container {
-    display: grid;
+    display: flex;
 }
 
 .list-container > ul {
