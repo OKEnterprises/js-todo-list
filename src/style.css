@@ -1,8 +1,17 @@
-.list-container {
+body {
     display: flex;
 }
 
-.list-container > ul {
+.list-container > ul > li:hover {
+    text-decoration: underline;
+}
+
+.new-task-form {
     display: flex;
     flex-direction: column;
+}
+
+.add-task-button {
+    border-radius: 50%;
+    color: cornflowerblue;
 }

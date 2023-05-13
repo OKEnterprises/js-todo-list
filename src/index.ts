@@ -1,5 +1,6 @@
 import './style.css';
 import * as dfns from 'date-fns';
+import { de } from 'date-fns/locale';
 
 console.log("index.ts loaded");
 
@@ -20,11 +21,11 @@ class ToDoItem {
     dueDate: Date;
     priority: number;
 
-    constructor(title: string, description: string, dueDate: string, priority: number) {
+    constructor(title: string, description: string, dueDate: string, priority: string) {
         this.title = title;
         this.description = description;
         this.dueDate = new Date(dueDate);
-        this.priority = priority;
+        this.priority = parseInt(priority);
     }
 }
 
@@ -60,22 +61,28 @@ class Project {
 
 interface ProjectComponent extends HTMLLIElement {}
 interface ToDoComponent extends HTMLLIElement {}
+interface AddTaskButtonComponent extends HTMLButtonElement {}
+interface NewTaskFormComponent extends HTMLFormElement {};
 
 const page = (() => {
-    let defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', 3);
+    let defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
     let defaultProject: Project = new Project('Project 1', defaultToDo);
-    let allProjects: Project[] = [defaultProject];
-    
+    let allProjects: Map<string, Project> = new Map();
+    allProjects.set(defaultProject.name, defaultProject);
+    let selectedProjectName: string = defaultProject.name;
+
+    const BODY = document.querySelector('body')!;
+
     // Appends an array of ToDoComponent objects to the task list component.
-    const appendTasks = (...toDoComps: ToDoComponent[]) => {
+    const appendTasks = (...toDoComps: ToDoComponent[]): void => {
         const taskList = document.querySelector('#task-list')!;
-        taskList.append(...toDoComps);
+        taskList.replaceChildren(...toDoComps);
     }
 
     // Appends an array of ProjectComponent objects to the task list component.
-    const appendProjects = (...projComps: ProjectComponent[]) => {
+    const appendProjects = (...projComps: ProjectComponent[]): void => {
         const projectList = document.querySelector('#project-list')!;
-        projectList.append(...projComps);
+        projectList.replaceChildren(...projComps);
     }
 
     // Takes in a ToDoItem object and returns an HTML component for it.
@@ -110,6 +117,7 @@ const page = (() => {
         component.textContent = proj.name;
 
         component.addEventListener('click', () => {
+            selectedProjectName = proj.name;
             appendTasks(...toDoComponentArray(...proj.toDos));
         }); 
 
@@ -142,22 +150,85 @@ const page = (() => {
         all.textContent = 'All';
 
         all.addEventListener('click', () => {
+            selectedProjectName = 'All';
             appendTasks(...toDoComponentArray(...Project.allToDos));
         });
 
         list.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        list.append(...allProjects.map(proj => projectComponentFactory(proj))); 
+        let pl: Project[] = [...allProjects.values()];
+        list.append(...projectComponentArray(...pl)); 
 
         listContainer.append(list);
         return listContainer;
     }
 
+    const newTaskFormDisplay = (): NewTaskFormComponent => {
+        const form: NewTaskFormComponent = document.createElement('form');
+        form.id = 'new-task-form';
+
+        const titleLabel: HTMLLabelElement = document.createElement('label');
+        titleLabel.htmlFor = 'title';
+        titleLabel.textContent = 'Title';
+
+        const title: HTMLInputElement = document.createElement('input');
+        title.type = 'text';
+        title.id = 'title';
+        title.name = 'title';
+
+        const descriptionLabel: HTMLLabelElement = document.createElement('label');
+        descriptionLabel.htmlFor = 'description';
+        descriptionLabel.textContent = 'Description';
+        
+        const description: HTMLInputElement = document.createElement('input');
+        description.type = 'text';
+        description.id = 'description';
+        description.name = 'description';
+
+        const dueDateLabel: HTMLLabelElement = document.createElement('label');
+        dueDateLabel.htmlFor = 'due-date';
+        dueDateLabel.textContent = 'Due date';
+        
+        const dueDate: HTMLInputElement = document.createElement('input');
+        dueDate.type = 'date';
+        dueDate.id = 'due-date';
+        dueDate.name = 'due-date';
+
+        const priorityLabel: HTMLLabelElement = document.createElement('label');
+        priorityLabel.htmlFor = 'priority';
+        priorityLabel.textContent = 'Priority';
+
+        const priority: HTMLInputElement = document.createElement('input');
+        priority.type = 'number';
+        priority.id = 'priority';
+        priority.name = 'priority';
+
+        const submit: HTMLButtonElement = document.createElement('button');
+        submit.textContent = 'Submit';
+        submit.addEventListener('click', () => {
+            let toDo = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
+
+        });
+
+        form.append(titleLabel, title, descriptionLabel, description, dueDateLabel, dueDate, priorityLabel, priority);
+        return form;
+    } 
+
+    const addTaskButtonDisplay = (): AddTaskButtonComponent => {
+        const button: AddTaskButtonComponent = document.createElement('button');
+        button.textContent = '+';
+        button.id = 'add-task-button';
+
+        button.addEventListener('click', () => {
+            BODY.replaceChildren(taskListDisplay(), projectListDisplay(), addTaskButtonDisplay(), newTaskFormDisplay());
+        });
+
+        return button;
+    }
+
     const render = () => {
-        const body = document.querySelector('body')!;
-        body.append(taskListDisplay(), projectListDisplay());
-        console.log("Render function completed");
+        BODY.replaceChildren(taskListDisplay(), projectListDisplay(), addTaskButtonDisplay());
     }
 
     return {
