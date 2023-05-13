@@ -1,6 +1,17 @@
 import './style.css';
 import * as dfns from 'date-fns';
 
+// Takes in an item and a list.
+// Returns a copy of list with the first instance of the item removed.
+// If the list does not contain the item, returns the list unaltered.
+function remove(list: any[], item: any): any[] {
+    let retVal = [...list];
+    const index: number = retVal.indexOf(item);
+    if (index < 0) return list;
+    retVal.splice(index, 1);
+    return retVal;
+}
+
 class ToDoItem {
     title: string;
     description: string;
@@ -45,54 +56,36 @@ class Project {
     }
 }
 
-class ProjectList {
-    list: Project[] = [];
-
-    constructor(...args: Project[]) {
-        this.list = [...args];
-    }
-
-    add(proj: Project) {
-        this.list.push(proj);
-    }
-
-    remove(project: Project) {
-        const index = this.list.indexOf(project);
-        this.list.splice(index, 1);
-    }
-}
-
 interface ProjectComponent extends HTMLLIElement {}
 interface ToDoComponent extends HTMLLIElement {}
 
 const page = (() => {
-    let defaultProject: Project = new Project('Project 1');
-    let todo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', 3);
-    defaultProject.add(todo);
-    let projects: ProjectList = new ProjectList(defaultProject);
+    let defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', 3);
+    let defaultProject: Project = new Project('Project 1', defaultToDo);
+    let projects: Project[] = [defaultProject];
     
     // Appends an array of ToDoComponent objects to the task list component.
-    const appendTasks = (...tasks: ToDoComponent[]) => {
+    const appendTasks = (...toDoComps: ToDoComponent[]) => {
         const taskList = document.querySelector('#task-list')!;
-        taskList.append(...tasks);
+        taskList.append(...toDoComps);
     }
 
     // Appends an array of ProjectComponent objects to the task list component.
-    const appendProjects = (...projects: ProjectComponent[]) => {
+    const appendProjects = (...projComps: ProjectComponent[]) => {
         const projectList = document.querySelector('#project-list')!;
-        projectList.append(...projects);
+        projectList.append(...projComps);
     }
 
     // Takes in a ToDoItem object and returns an HTML component for it.
-    const toDoComponentFactory = (todo: ToDoItem): ToDoComponent => {
+    const toDoComponentFactory = (toDo: ToDoItem): ToDoComponent => {
         const component: HTMLLIElement = document.createElement('li');
         const container: HTMLDivElement = document.createElement('div');
 
         const title: HTMLDivElement = document.createElement('div');
-        title.textContent = todo.title;
+        title.textContent = toDo.title;
 
         const dueDate: HTMLDivElement = document.createElement('div');
-        dueDate.textContent = todo.dueDate.toDateString();
+        dueDate.textContent = toDo.dueDate.toDateString();
 
         component.append(title, dueDate);
         container.append(component);
@@ -100,12 +93,12 @@ const page = (() => {
     }
 
     // Takes in a variable number of ToDoItems and returns an array of HTML components.
-    const toDoComponentArray = (...args: ToDoItem[]): ToDoComponent[] => {
-        return [...args].map(toDo => toDoComponentFactory(toDo));
+    const toDoComponentArray = (...toDos: ToDoItem[]): ToDoComponent[] => {
+        return [...toDos].map(toDo => toDoComponentFactory(toDo));
     }
 
-    const projectComponentArray = (...args: Project[]): ProjectComponent[] => {
-        return [...args].map(proj => projectComponentFactory(proj));
+    const projectComponentArray = (...projects: Project[]): ProjectComponent[] => {
+        return [...projects].map(proj => projectComponentFactory(proj));
     }
 
     // Takes in a Project object and returns an HTML component for it.
@@ -153,7 +146,7 @@ const page = (() => {
         list.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        list.append(...projects.list.map(proj => projectComponentFactory(proj))); 
+        list.append(...projects.map(proj => projectComponentFactory(proj))); 
 
         listContainer.append(list);
         return listContainer;
@@ -165,8 +158,6 @@ const page = (() => {
     }
 
     return {
-            defaultProject,
-            todo,
             projects,
             appendTasks,
             toDoComponentFactory,
