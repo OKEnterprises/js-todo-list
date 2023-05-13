@@ -1,6 +1,8 @@
 import './style.css';
 import * as dfns from 'date-fns';
 
+console.log("index.ts loaded");
+
 // Takes in an item and a list.
 // Returns a copy of list with the first instance of the item removed.
 // If the list does not contain the item, returns the list unaltered.
@@ -62,7 +64,7 @@ interface ToDoComponent extends HTMLLIElement {}
 const page = (() => {
     let defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', 3);
     let defaultProject: Project = new Project('Project 1', defaultToDo);
-    let projects: Project[] = [defaultProject];
+    let allProjects: Project[] = [defaultProject];
     
     // Appends an array of ToDoComponent objects to the task list component.
     const appendTasks = (...toDoComps: ToDoComponent[]) => {
@@ -146,7 +148,7 @@ const page = (() => {
         list.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        list.append(...projects.map(proj => projectComponentFactory(proj))); 
+        list.append(...allProjects.map(proj => projectComponentFactory(proj))); 
 
         listContainer.append(list);
         return listContainer;
@@ -155,10 +157,11 @@ const page = (() => {
     const render = () => {
         const body = document.querySelector('body')!;
         body.append(taskListDisplay(), projectListDisplay());
+        console.log("Render function completed");
     }
 
     return {
-            projects,
+            allProjects,
             appendTasks,
             toDoComponentFactory,
             toDoComponentArray,
