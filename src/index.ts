@@ -207,11 +207,13 @@ const page = (() => {
         const submit: HTMLButtonElement = document.createElement('button');
         submit.textContent = 'Submit';
         submit.addEventListener('click', () => {
-            let toDo = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
-
+            let toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
+            let proj: Project = allProjects.get(selectedProjectName);
+            proj.add(toDo);
+            render();
         });
 
-        form.append(titleLabel, title, descriptionLabel, description, dueDateLabel, dueDate, priorityLabel, priority);
+        form.append(titleLabel, title, descriptionLabel, description, dueDateLabel, dueDate, priorityLabel, priority, submit);
         return form;
     } 
 
