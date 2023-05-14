@@ -2,7 +2,7 @@ import './style.css';
 import * as dfns from 'date-fns';
 import { de } from 'date-fns/locale';
 
-console.log("index.ts loaded");
+// TODO You should add some persistence to this todo app using the Web Storage API. 
 
 // Takes in an item and a list.
 // Returns a copy of list with the first instance of the item removed.
@@ -58,6 +58,7 @@ class Project {
 
 interface ProjectComponent extends HTMLLIElement {}
 interface ToDoComponent extends HTMLLIElement {}
+interface ToDoDetailsComponent extends HTMLDivElement {};
 interface AddTaskButtonComponent extends HTMLButtonElement {}
 interface NewTaskFormComponent extends HTMLFormElement {};
 
@@ -82,9 +83,29 @@ const page = (() => {
         projectList.replaceChildren(...projComps);
     }
 
+    // Takes in a ToDoItem and returns an HTML component for its details.
+    const toDoDetailsComponentFactory = (toDo: ToDoItem): ToDoDetailsComponent => {
+        const component: ToDoDetailsComponent = document.createElement('div');
+        const description: HTMLParagraphElement = document.createElement('p');
+        const priority: HTMLParagraphElement = document.createElement('p');
+
+        const hide: HTMLButtonElement = document.createElement('button');
+        hide.textContent = 'X';
+        
+        hide.addEventListener('click', () => {
+            component.remove();
+        });
+
+        description.textContent = toDo.description;
+        priority.textContent = `${toDo.priority}`;
+
+        component.append(description, priority);
+        return component;
+    }
+
     // Takes in a ToDoItem object and returns an HTML component for it.
     const toDoComponentFactory = (toDo: ToDoItem): ToDoComponent => {
-        const component: HTMLLIElement = document.createElement('li');
+        const component: ToDoComponent = document.createElement('li');
         const container: HTMLDivElement = document.createElement('div');
 
         const title: HTMLDivElement = document.createElement('div');
@@ -94,10 +115,14 @@ const page = (() => {
         dueDate.textContent = toDo.dueDate.toDateString();
 
         component.addEventListener('click', () => {
+            component.replaceChildren(container, toDoDetailsComponentFactory(toDo));
+        });
+
+        component.addEventListener('contextmenu', () => {
             let pr: Project = allProjectsMap.get(selectedProjectName);
             pr.remove(toDo);
             component.remove();
-        });
+        })
 
         container.append(title, dueDate);
         component.append(container);

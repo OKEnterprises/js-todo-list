@@ -1,5 +1,6 @@
 body {
     display: flex;
+    justify-content: space-between;
 }
 
 .list-container > ul > li:hover {
@@ -14,4 +15,5 @@ body {
 .add-task-button {
     border-radius: 50%;
     color: cornflowerblue;
+    height: 1em;
 }
