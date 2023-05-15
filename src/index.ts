@@ -1,6 +1,4 @@
 import './style.css';
-import * as dfns from 'date-fns';
-import { de } from 'date-fns/locale';
 
 // TODO You should add some persistence to this todo app using the Web Storage API. 
 
@@ -8,7 +6,7 @@ import { de } from 'date-fns/locale';
 // Returns a copy of list with the first instance of the item removed.
 // If the list does not contain the item, returns the list unaltered.
 function removeFromList(list: any[], item: any): any[] {
-    let retVal = [...list];
+    const retVal = [...list];
     const index: number = retVal.indexOf(item);
     if (index < 0) return list;
     retVal.splice(index, 1);
@@ -27,13 +25,20 @@ class ToDoItem {
         this.dueDate = new Date(dueDate);
         this.priority = parseInt(priority);
     }
+
+    edit(title: string, description: string, dueDate: string, priority: string) {
+        this.title = title;
+        this.description = description;
+        this.dueDate = new Date(dueDate);
+        this.priority = parseInt(priority);
+    }
 }
 
 class Project {
     static allToDos: ToDoItem[] = [];
-    static numProjects: number = 0;
+    static numProjects = 0;
     toDos: ToDoItem[] = [];
-    name: string = "Projecty";
+    name = "Projecty";
 
     //New Projects can be initialized with todos.
     constructor(name: string, ...toDos: ToDoItem[]) {
@@ -56,31 +61,25 @@ class Project {
     }
 }
 
-interface ProjectComponent extends HTMLLIElement {}
-interface ToDoComponent extends HTMLLIElement {}
-interface ToDoDetailsComponent extends HTMLDivElement {};
-interface AddTaskButtonComponent extends HTMLButtonElement {}
-interface NewTaskFormComponent extends HTMLFormElement {};
+type ProjectComponent = HTMLLIElement
+type ToDoComponent = HTMLLIElement
+type ToDoDetailsComponent = HTMLDivElement
+type AddTaskButtonComponent = HTMLButtonElement
+type NewTaskFormComponent = HTMLFormElement
 
 const page = (() => {
-    let defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
-    let defaultProject: Project = new Project('Project 1', defaultToDo);
-    let allProjectsMap: Map<string, Project> = new Map();
+    const defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
+    const defaultProject: Project = new Project('Project 1', defaultToDo);
+    const allProjectsMap: Map<string, Project> = new Map();
     allProjectsMap.set(defaultProject.name, defaultProject);
     let selectedProjectName: string = defaultProject.name;
 
-    const BODY = document.querySelector('body')!;
+    const BODY = document.querySelector('body');
 
     // Appends an array of ToDoComponent objects to the task list component.
     const appendTasks = (...toDoComps: ToDoComponent[]): void => {
-        const taskList = document.querySelector('#task-list')!;
+        const taskList = document.querySelector('#task-list');
         taskList.replaceChildren(...toDoComps);
-    }
-
-    // Appends an array of ProjectComponent objects to the task list component.
-    const appendProjects = (...projComps: ProjectComponent[]): void => {
-        const projectList = document.querySelector('#project-list')!;
-        projectList.replaceChildren(...projComps);
     }
 
     // Takes in a ToDoItem and returns an HTML component for its details.
@@ -88,18 +87,30 @@ const page = (() => {
         const component: ToDoDetailsComponent = document.createElement('div');
         const description: HTMLParagraphElement = document.createElement('p');
         const priority: HTMLParagraphElement = document.createElement('p');
-
-        const hide: HTMLButtonElement = document.createElement('button');
-        hide.textContent = 'X';
-        
-        hide.addEventListener('click', () => {
-            component.remove();
-        });
+        const editButton: HTMLButtonElement = document.createElement('button');
 
         description.textContent = toDo.description;
-        priority.textContent = `${toDo.priority}`;
+        priority.textContent = `Priority ${toDo.priority}`;
 
-        component.append(description, priority);
+        editButton.textContent = "Edit"
+        editButton.addEventListener('click', () => {
+            const newTaskForm: NewTaskFormComponent = newTaskFormDisplay();
+
+            const taskTitle: HTMLInputElement = newTaskForm.querySelector("#title");
+            taskTitle.value = toDo.title;
+
+            const taskDescription: HTMLInputElement = newTaskForm.querySelector('#description');
+            taskDescription.value = toDo.description;
+
+            const dueDate: HTMLInputElement = newTaskForm.querySelector('#due-date');
+            dueDate.value = `${toDo.dueDate}`;
+
+            const priority: HTMLInputElement = newTaskForm.querySelector('#priority');
+            priority.value = `${toDo.priority}`;
+        });
+
+
+        component.append(description, priority, editButton);
         return component;
     }
 
@@ -114,12 +125,20 @@ const page = (() => {
         const dueDate: HTMLDivElement = document.createElement('div');
         dueDate.textContent = toDo.dueDate.toDateString();
 
+        let detailsShowing = false;
+
         component.addEventListener('click', () => {
-            component.replaceChildren(container, toDoDetailsComponentFactory(toDo));
+            if (detailsShowing) {
+                component.replaceChildren(container);
+                detailsShowing = false;
+            } else {
+                component.replaceChildren(container, toDoDetailsComponentFactory(toDo));
+                detailsShowing = true;
+            }
         });
 
         component.addEventListener('contextmenu', () => {
-            let pr: Project = allProjectsMap.get(selectedProjectName);
+            const pr: Project = allProjectsMap.get(selectedProjectName);
             pr.remove(toDo);
             component.remove();
         })
@@ -152,8 +171,8 @@ const page = (() => {
         return component;
     }
 
-     // Returns the task list as a component.
-     const taskListDisplay = (): HTMLDivElement => {
+    // Returns the task list as a component.
+    const taskListDisplay = (): HTMLDivElement => {
         const listContainer: HTMLDivElement = document.createElement('div');
         listContainer.classList.add('list-container');
 
@@ -185,7 +204,7 @@ const page = (() => {
         list.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        let pl: Project[] = [...allProjectsMap.values()];
+        const pl: Project[] = [...allProjectsMap.values()];
         list.append(...projectComponentArray(...pl)); 
 
         listContainer.append(list);
@@ -235,8 +254,8 @@ const page = (() => {
         const submit: HTMLButtonElement = document.createElement('button');
         submit.textContent = 'Submit';
         submit.addEventListener('click', () => {
-            let toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
-            let proj: Project = allProjectsMap.get(selectedProjectName);
+            const toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
+            const proj: Project = allProjectsMap.get(selectedProjectName);
             proj.add(toDo);
             render();
         });
@@ -262,7 +281,7 @@ const page = (() => {
     }
 
     return {
-            allProjects: allProjectsMap,
+            allProjectsMap,
             appendTasks,
             toDoComponentFactory,
             toDoComponentArray,
