@@ -5,13 +5,6 @@ import './style.css';
 // Takes in an item and a list.
 // Returns a copy of list with the first instance of the item removed.
 // If the list does not contain the item, returns the list unaltered.
-function removeFromList(list: any[], item: any): any[] {
-    const retVal = [...list];
-    const index: number = retVal.indexOf(item);
-    if (index < 0) return list;
-    retVal.splice(index, 1);
-    return retVal;
-}
 
 class ToDoItem {
     title: string;
@@ -34,30 +27,55 @@ class ToDoItem {
     }
 }
 
+class ToDoList {
+    private list: ToDoItem[];
+
+    constructor(...toDos: ToDoItem[]) {
+        this.list = [...toDos];
+    }
+
+    add(toDo: ToDoItem) {
+        this.list.push(toDo);
+    }
+
+    addMultiple(...toDos: ToDoItem[]) {
+        this.list.concat(toDos);
+    }
+
+    remove(toDo: ToDoItem) {
+        const index: number = this.list.indexOf(toDo);
+        if (index >= 0) this.list.splice(index, 1);
+    }
+
+    toArray() {
+        return this.list;
+    }
+}
+
 class Project {
-    static allToDos: ToDoItem[] = [];
+    static allToDos: ToDoList = new ToDoList();
     static numProjects = 0;
-    toDos: ToDoItem[] = [];
+    toDos: ToDoList;
     name = "Projecty";
 
     //New Projects can be initialized with todos.
     constructor(name: string, ...toDos: ToDoItem[]) {
         this.name = name;
-        Project.allToDos = Project.allToDos.concat(toDos);
-        this.toDos = [...toDos];
+        Project.allToDos.addMultiple(...toDos);
+        this.toDos = new ToDoList(...toDos);
         Project.numProjects++;
     }
 
     //Pushes a ToDoItem to the todos AND all_todos arrays.
     add(item: ToDoItem) {
-        Project.allToDos.push(item);
-        this.toDos.push(item);
+        Project.allToDos.add(item);
+        this.toDos.add(item);
     }
 
     //Removes a given ToDoItem from both todos and all_todos.
-    remove(item: ToDoItem) {
-        Project.allToDos = removeFromList(Project.allToDos, item);
-        this.toDos = removeFromList(this.toDos, item);
+    remove(toDo: ToDoItem) {
+        Project.allToDos.remove(toDo);
+        this.toDos.remove(toDo);
     }
 }
 
@@ -165,7 +183,7 @@ const page = (() => {
 
         component.addEventListener('click', () => {
             selectedProjectName = proj.name;
-            appendTasks(...toDoComponentArray(...proj.toDos));
+            appendTasks(...toDoComponentArray(...proj.toDos.toArray()));
         }); 
 
         return component;
@@ -198,7 +216,7 @@ const page = (() => {
 
         all.addEventListener('click', () => {
             selectedProjectName = 'All';
-            appendTasks(...toDoComponentArray(...Project.allToDos));
+            appendTasks(...toDoComponentArray(...Project.allToDos.toArray()));
         });
 
         list.append(all);
