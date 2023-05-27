@@ -2,30 +2,52 @@ import './style.css';
 
 // TODO You should add some persistence to this todo app using the Web Storage API. 
 
-// Takes in an item and a list.
-// Returns a copy of list with the first instance of the item removed.
-// If the list does not contain the item, returns the list unaltered.
+// The ToDoItem class models an item on a to-do list with a title, description, due date, and priority.
+// The item's details can be edited.
+
+class ToDoId {
+    readonly id: number;
+    private static maxId = -1;
+
+    constructor() {
+        this.id = ToDoId.maxId++;
+    }
+
+    equals(id: ToDoId) {
+        return this.id == id.id;
+    }
+}
 
 class ToDoItem {
     title: string;
     description: string;
     dueDate: Date;
     priority: number;
+    id: ToDoId;
 
     constructor(title: string, description: string, dueDate: string, priority: string) {
         this.title = title;
         this.description = description;
         this.dueDate = new Date(dueDate);
         this.priority = parseInt(priority);
+        this.id = new ToDoId();
     }
 
-    edit(title: string, description: string, dueDate: string, priority: string) {
+    edit(title: string, description: string, dueDate: string, priority: string): void {
         this.title = title;
         this.description = description;
         this.dueDate = new Date(dueDate);
         this.priority = parseInt(priority);
     }
+
+    equals(other: ToDoItem): boolean {
+        return this.id.equals(other.id);
+    }
 }
+
+// The ToDoList class models a to-do list.
+// It is backed by an array of ToDoItems.
+// ToDoItems can be added and removed from the list.
 
 class ToDoList {
     private list: ToDoItem[];
@@ -34,23 +56,50 @@ class ToDoList {
         this.list = [...toDos];
     }
 
-    add(toDo: ToDoItem) {
-        this.list.push(toDo);
-    }
-
-    addMultiple(...toDos: ToDoItem[]) {
+    add(...toDos: ToDoItem[]) {
         this.list.concat(toDos);
+        console.log(toDos);
     }
 
     remove(toDo: ToDoItem) {
-        const index: number = this.list.indexOf(toDo);
-        if (index >= 0) this.list.splice(index, 1);
+        console.log(toDo);
+        const index: number = this.indexOf(toDo);
+        this.removeIdx(index);
+    }
+
+    removeIdx(idx: number) {
+        if (idx >= 0) this.list.splice(idx, 1);
+    }
+
+    contains(toDo: ToDoItem): boolean {
+        for (let i = 0; i < this.list.length; i++) {
+            if (this.list[i].equals(toDo)) return true;
+        }
+        return false;
+    }
+
+    indexOf(toDo: ToDoItem): number {
+        for (let i = 0; i < this.list.length; i++) {
+            if (this.list[i].equals(toDo)) return i;
+        }
+        return -1;
     }
 
     toArray() {
         return this.list;
     }
+
+    get(id: ToDoId): ToDoItem {
+        for (let i = 0; i < this.list.length; i++) {
+            if (this.list[i].id.equals(id)) return this.list[i];
+        }
+    }
 }
+
+// The Project class models a project the user wants to track tasks for.
+// It contains two static fields, allToDos and numProjects.
+// Each Project has its own ToDoList.
+// ToDoItems can be added and removed.
 
 class Project {
     static allToDos: ToDoList = new ToDoList();
@@ -61,7 +110,7 @@ class Project {
     //New Projects can be initialized with todos.
     constructor(name: string, ...toDos: ToDoItem[]) {
         this.name = name;
-        Project.allToDos.addMultiple(...toDos);
+        Project.allToDos.add(...toDos);
         this.toDos = new ToDoList(...toDos);
         Project.numProjects++;
     }
@@ -77,7 +126,21 @@ class Project {
         Project.allToDos.remove(toDo);
         this.toDos.remove(toDo);
     }
+
+    contains(toDo: ToDoItem): boolean {
+        return this.toDos.contains(toDo);
+    }
+
+    indexOf(toDo: ToDoItem): number {
+        return this.toDos.indexOf(toDo);
+    }
+
+    get(id: ToDoId): ToDoItem {
+        return this.toDos.get(id);
+    }
 }
+
+// The Page module renders and tracks events for the page.
 
 type ProjectComponent = HTMLLIElement
 type ToDoComponent = HTMLLIElement
@@ -91,6 +154,8 @@ const page = (() => {
     const allProjectsMap: Map<string, Project> = new Map();
     allProjectsMap.set(defaultProject.name, defaultProject);
     let selectedProjectName: string = defaultProject.name;
+    let selectedToDo: ToDoId = defaultToDo.id;
+    let editMode = false;
 
     const BODY = document.querySelector('body');
 
@@ -112,6 +177,9 @@ const page = (() => {
 
         editButton.textContent = "Edit"
         editButton.addEventListener('click', () => {
+            editMode = true;
+            selectedToDo = toDo.id;
+
             const newTaskForm: NewTaskFormComponent = newTaskFormDisplay();
 
             const taskTitle: HTMLInputElement = newTaskForm.querySelector("#title");
@@ -125,6 +193,8 @@ const page = (() => {
 
             const priority: HTMLInputElement = newTaskForm.querySelector('#priority');
             priority.value = `${toDo.priority}`;
+
+            BODY.append(newTaskForm);
         });
 
 
@@ -145,7 +215,7 @@ const page = (() => {
 
         let detailsShowing = false;
 
-        component.addEventListener('click', () => {
+        container.addEventListener('click', () => {
             if (detailsShowing) {
                 component.replaceChildren(container);
                 detailsShowing = false;
@@ -155,7 +225,7 @@ const page = (() => {
             }
         });
 
-        component.addEventListener('contextmenu', () => {
+        container.addEventListener('contextmenu', () => {
             const pr: Project = allProjectsMap.get(selectedProjectName);
             pr.remove(toDo);
             component.remove();
@@ -271,10 +341,18 @@ const page = (() => {
 
         const submit: HTMLButtonElement = document.createElement('button');
         submit.textContent = 'Submit';
+        
         submit.addEventListener('click', () => {
-            const toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
             const proj: Project = allProjectsMap.get(selectedProjectName);
-            proj.add(toDo);
+
+            if (editMode) {
+                const toDo = proj.get(selectedToDo);
+                toDo.edit(title.value, description.value, dueDate.value, priority.value);
+            } else {
+                const toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
+                proj.add(toDo);
+            }
+
             render();
         });
 
@@ -307,7 +385,7 @@ const page = (() => {
             taskListDisplay, 
             projectListDisplay, 
             render,
-        };
+        }
 })();
 
 page.render();
