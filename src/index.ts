@@ -13,7 +13,7 @@ class ToDoId {
         this.id = ToDoId.maxId++;
     }
 
-    equals(id: ToDoId) {
+    equals(id: ToDoId): boolean {
         return this.id == id.id;
     }
 }
@@ -58,7 +58,6 @@ class ToDoList {
 
     add(...toDos: ToDoItem[]) {
         this.list.concat(toDos);
-        console.log(toDos);
     }
 
     remove(toDo: ToDoItem) {
@@ -119,6 +118,7 @@ class Project {
     add(item: ToDoItem) {
         Project.allToDos.add(item);
         this.toDos.add(item);
+        console.log(Project.allToDos, this.toDos);
     }
 
     //Removes a given ToDoItem from both todos and all_todos.
@@ -197,7 +197,6 @@ const page = (() => {
             BODY.append(newTaskForm);
         });
 
-
         component.append(description, priority, editButton);
         return component;
     }
@@ -253,6 +252,7 @@ const page = (() => {
 
         component.addEventListener('click', () => {
             selectedProjectName = proj.name;
+            console.log(selectedProjectName);
             appendTasks(...toDoComponentArray(...proj.toDos.toArray()));
         }); 
 
@@ -286,7 +286,11 @@ const page = (() => {
 
         all.addEventListener('click', () => {
             selectedProjectName = 'All';
-            appendTasks(...toDoComponentArray(...Project.allToDos.toArray()));
+            console.log(selectedProjectName);
+            const tasks = Project.allToDos.toArray();
+            const taskComponents = toDoComponentArray(...tasks);
+            console.log(tasks);
+            appendTasks(...taskComponents);
         });
 
         list.append(all);
@@ -348,10 +352,14 @@ const page = (() => {
             if (editMode) {
                 const toDo = proj.get(selectedToDo);
                 toDo.edit(title.value, description.value, dueDate.value, priority.value);
+                editMode = false;
             } else {
                 const toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
+                console.log(toDo);
                 proj.add(toDo);
             }
+
+            allProjectsMap.set(selectedProjectName, proj);
 
             render();
         });
