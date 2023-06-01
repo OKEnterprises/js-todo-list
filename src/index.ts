@@ -57,7 +57,7 @@ class ToDoList {
     }
 
     add(...toDos: ToDoItem[]) {
-        this.list.concat(toDos);
+       this.list = this.list.concat(toDos);
     }
 
     remove(toDo: ToDoItem) {
@@ -345,8 +345,8 @@ const page = (() => {
 
         const submit: HTMLButtonElement = document.createElement('button');
         submit.textContent = 'Submit';
-        
-        submit.addEventListener('click', () => {
+
+        const onSubmit = () => {
             const proj: Project = allProjectsMap.get(selectedProjectName);
 
             if (editMode) {
@@ -362,7 +362,9 @@ const page = (() => {
             allProjectsMap.set(selectedProjectName, proj);
 
             render();
-        });
+        }
+        
+        submit.addEventListener('click', onSubmit);
 
         form.append(titleLabel, title, descriptionLabel, description, dueDateLabel, dueDate, priorityLabel, priority, submit);
         return form;
