@@ -1,22 +1,48 @@
 import './style.css';
 
-// TODO You should add some persistence to this todo app using the Web Storage API. 
+// globalMaxId is a global variable reflecting the highest id on a ToDoId object .
+let globalMaxId = -1;
 
-// The ToDoItem class models an item on a to-do list with a title, description, due date, and priority.
-// The item's details can be edited.
+interface StorableToDoId {
+    id: number;
+}
+
+function storableToDoIdFactory(): StorableToDoId {
+    return { id: globalMaxId++ }
+}
 
 class ToDoId {
     readonly id: number;
-    private static maxId = -1;
 
-    constructor() {
-        this.id = ToDoId.maxId++;
+    constructor(o: StorableToDoId) {
+        this.id = o.id;
     }
 
     equals(id: ToDoId): boolean {
         return this.id == id.id;
     }
 }
+
+interface StorableToDoItem {
+    title: string;
+    description: string;
+    dueDate: string;
+    priority: number;
+    id: StorableToDoId;
+}
+
+function storableToDoItemFactory(title: string, description: string, dueDate: string, priority: string): StorableToDoItem {
+    return {
+        title: title,
+        description: description,
+        dueDate: dueDate,
+        priority: parseInt(priority),
+        id: storableToDoIdFactory()
+    }
+}
+
+// The ToDoItem class models an item on a to-do list with a title, description, due date, and priority.
+// The item's details can be edited. 
 
 class ToDoItem {
     title: string;
@@ -25,12 +51,11 @@ class ToDoItem {
     priority: number;
     id: ToDoId;
 
-    constructor(title: string, description: string, dueDate: string, priority: string) {
-        this.title = title;
-        this.description = description;
-        this.dueDate = new Date(dueDate);
-        this.priority = parseInt(priority);
-        this.id = new ToDoId();
+    constructor(o: StorableToDoItem) {
+        this.title = o.title;
+        this.description = o.description;
+        this.dueDate = new Date(o.dueDate);
+        this.id = new ToDoId(o.id);
     }
 
     edit(title: string, description: string, dueDate: string, priority: string): void {
@@ -43,31 +68,53 @@ class ToDoItem {
     equals(other: ToDoItem): boolean {
         return this.id.equals(other.id);
     }
+
+    asStorable(): StorableToDoItem {
+        return {
+            title: this.title,
+            description: this.description,
+            dueDate: this.dueDate.toDateString(),
+            priority: this.priority,
+            id: this.id,
+        }
+    }
 }
 
 // The ToDoList class models a to-do list.
 // It is backed by an array of ToDoItems.
 // ToDoItems can be added and removed from the list.
 
+interface StorableToDoList {
+    list: StorableToDoItem[]
+}
+
+function storableToDoListFactory(...toDos: StorableToDoItem[]): StorableToDoList {
+    return { list: [...toDos] }
+}
+
 class ToDoList {
     private list: ToDoItem[];
 
-    constructor(...toDos: ToDoItem[]) {
-        this.list = [...toDos];
+    constructor(o: StorableToDoList) {
+        this.list = o.list.map(storable => new ToDoItem(storable));
     }
 
-    add(...toDos: ToDoItem[]) {
-       this.list = this.list.concat(toDos);
+    add(...toDos: ToDoItem[]): boolean {
+        for (let i = 0; i < toDos.length; i++) {
+            if (this.contains(toDos[i])) return false;
+        } 
+        
+        this.list = this.list.concat(toDos);
+        return true;
     }
 
-    remove(toDo: ToDoItem) {
-        console.log(toDo);
+    remove(toDo: ToDoItem): ToDoItem {
         const index: number = this.indexOf(toDo);
-        this.removeIdx(index);
+        return this.removeIdx(index);
     }
 
-    removeIdx(idx: number) {
-        if (idx >= 0) this.list.splice(idx, 1);
+    removeIdx(idx: number): ToDoItem {
+        if (idx >= 0) return this.list.splice(idx, 1)[0];
     }
 
     contains(toDo: ToDoItem): boolean {
@@ -84,13 +131,19 @@ class ToDoList {
         return -1;
     }
 
-    toArray() {
+    toArray(): ToDoItem[] {
         return this.list;
     }
 
     get(id: ToDoId): ToDoItem {
         for (let i = 0; i < this.list.length; i++) {
             if (this.list[i].id.equals(id)) return this.list[i];
+        }
+    }
+
+    asStorable(): StorableToDoList {
+        return {
+            list: this.toArray().map(toDo => toDo.asStorable())
         }
     }
 }
@@ -100,31 +153,59 @@ class ToDoList {
 // Each Project has its own ToDoList.
 // ToDoItems can be added and removed.
 
+interface StorableProject { 
+    name: string,
+    toDos: StorableToDoList,
+}
+
+function storableProjectFactory(name: string, ...toDos: StorableToDoItem[]): StorableProject {
+    return {
+        name,
+        toDos: storableToDoListFactory(...toDos),
+    }
+}
+
+function loadAllToDos(): ToDoList {
+    const allToDos: ToDoList = new ToDoList({ list: [] });
+    let allProjects: StorableProjectDictionary;
+    
+    try {
+        allProjects = JSON.parse(localStorage.getItem('allProjects'));
+    } catch (error) {
+        return allToDos
+    }
+
+    // Adds all tasks from all projects to a unified ToDoList
+    for (const proj in allProjects) { 
+        allToDos.add(...new Project(allProjects[proj]).toDos.toArray());
+    }
+
+    return allToDos;
+}
+
 class Project {
-    static allToDos: ToDoList = new ToDoList();
-    static numProjects = 0;
+    name: string;
     toDos: ToDoList;
-    name = "Projecty";
+    static allToDos: ToDoList = loadAllToDos();
+    static numProjects = 0;
 
     //New Projects can be initialized with todos.
-    constructor(name: string, ...toDos: ToDoItem[]) {
-        this.name = name;
-        Project.allToDos.add(...toDos);
-        this.toDos = new ToDoList(...toDos);
+    constructor(o: StorableProject) {
+        this.name = o.name;
+        this.toDos = new ToDoList(o.toDos);
+        Project.allToDos.add(...this.toDos.toArray());
         Project.numProjects++;
     }
 
     //Pushes a ToDoItem to the todos AND all_todos arrays.
-    add(item: ToDoItem) {
-        Project.allToDos.add(item);
-        this.toDos.add(item);
-        console.log(Project.allToDos, this.toDos);
+    add(item: ToDoItem): boolean {
+        return Project.allToDos.add(item) && this.toDos.add(item);
     }
 
     //Removes a given ToDoItem from both todos and all_todos.
-    remove(toDo: ToDoItem) {
+    remove(toDo: ToDoItem): ToDoItem {
         Project.allToDos.remove(toDo);
-        this.toDos.remove(toDo);
+        return this.toDos.remove(toDo);
     }
 
     contains(toDo: ToDoItem): boolean {
@@ -138,6 +219,17 @@ class Project {
     get(id: ToDoId): ToDoItem {
         return this.toDos.get(id);
     }
+
+    asStorable(): StorableProject {
+        return {
+            name: this.name,
+            toDos: this.toDos.asStorable(),
+        }
+    }
+}
+
+function storablesToProjArr(...storables: StorableProject[]): Project[] {
+    return storables.map(storable => new Project(storable));
 }
 
 // The Page module renders and tracks events for the page.
@@ -148,21 +240,53 @@ type ToDoDetailsComponent = HTMLDivElement
 type AddTaskButtonComponent = HTMLButtonElement
 type NewTaskFormComponent = HTMLFormElement
 
+interface StorableProjectDictionary {
+    [index: string]: StorableProject
+}
+
+function storableProjectDictFactory(...projects: StorableProject[]): StorableProjectDictionary {
+    const res: StorableProjectDictionary = {}
+    projects.forEach(proj => res[proj.name] = proj);
+    return res;
+}
+
+function storableProjectValues(dict: StorableProjectDictionary): StorableProject[] {
+    const res = [];
+    for (const property in dict) res.push(dict[property]);
+    return res;
+}
+
+const defaultDataToLocalStorage = () => {
+    const defaultToDo: StorableToDoItem = storableToDoItemFactory('brush teeth', 'for 2 min', '2/23/23', '3');
+    const defaultProject: StorableProject = storableProjectFactory('Project 1', defaultToDo);
+    const allProjects: StorableProjectDictionary = storableProjectDictFactory(defaultProject);
+    localStorage.setItem('allProjects', JSON.stringify(allProjects));
+    localStorage.setItem('selectedProjectName', defaultProject.name);
+    localStorage.setItem('selectedToDo', JSON.stringify(defaultToDo.id));
+};
+
 const page = (() => {
-    const defaultToDo: ToDoItem = new ToDoItem('brush teeth', 'for 2 min', '2/23/23', '3');
-    const defaultProject: Project = new Project('Project 1', defaultToDo);
-    const allProjectsMap: Map<string, Project> = new Map();
-    allProjectsMap.set(defaultProject.name, defaultProject);
-    let selectedProjectName: string = defaultProject.name;
-    let selectedToDo: ToDoId = defaultToDo.id;
+    defaultDataToLocalStorage();
+
+    let allProjects: StorableProjectDictionary;
+    let selectedProjectName: string;
+    let selectedToDo: ToDoId;
     let editMode = false;
+
+    try {
+        allProjects = JSON.parse(localStorage.getItem('allProjects'));
+        selectedProjectName = localStorage.getItem('selectedProjectName');
+        selectedToDo = JSON.parse(localStorage.getItem('selectedToDo'));
+    } catch (error) {
+        allProjects = {};
+        selectedProjectName = "All";
+    }
 
     const BODY = document.querySelector('body');
 
     // Appends an array of ToDoComponent objects to the task list component.
     const appendTasks = (...toDoComps: ToDoComponent[]): void => {
-        const taskList = document.querySelector('#task-list');
-        taskList.replaceChildren(...toDoComps);
+        document.querySelector('#task-list').replaceChildren(...toDoComps);
     }
 
     // Takes in a ToDoItem and returns an HTML component for its details.
@@ -225,7 +349,7 @@ const page = (() => {
         });
 
         container.addEventListener('contextmenu', () => {
-            const pr: Project = allProjectsMap.get(selectedProjectName);
+            const pr: Project = new Project(allProjects[selectedProjectName]);
             pr.remove(toDo);
             component.remove();
         })
@@ -252,7 +376,6 @@ const page = (() => {
 
         component.addEventListener('click', () => {
             selectedProjectName = proj.name;
-            console.log(selectedProjectName);
             appendTasks(...toDoComponentArray(...proj.toDos.toArray()));
         }); 
 
@@ -286,17 +409,15 @@ const page = (() => {
 
         all.addEventListener('click', () => {
             selectedProjectName = 'All';
-            console.log(selectedProjectName);
             const tasks = Project.allToDos.toArray();
             const taskComponents = toDoComponentArray(...tasks);
-            console.log(tasks);
             appendTasks(...taskComponents);
         });
 
         list.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        const pl: Project[] = [...allProjectsMap.values()];
+        const pl = storablesToProjArr(...storableProjectValues(allProjects));
         list.append(...projectComponentArray(...pl)); 
 
         listContainer.append(list);
@@ -347,19 +468,20 @@ const page = (() => {
         submit.textContent = 'Submit';
 
         const onSubmit = () => {
-            const proj: Project = allProjectsMap.get(selectedProjectName);
+            console.log("onsubmit");
+            const proj: Project = new Project(allProjects[selectedProjectName]);
 
             if (editMode) {
                 const toDo = proj.get(selectedToDo);
                 toDo.edit(title.value, description.value, dueDate.value, priority.value);
                 editMode = false;
             } else {
-                const toDo: ToDoItem = new ToDoItem(title.value, description.value, dueDate.value, priority.value);
-                console.log(toDo);
+                const toDo: ToDoItem = new ToDoItem(storableToDoItemFactory(title.value, description.value, dueDate.value, priority.value));
                 proj.add(toDo);
             }
 
-            allProjectsMap.set(selectedProjectName, proj);
+            allProjects[selectedProjectName] = proj.asStorable();
+            localStorage.setItem('allProjects', JSON.stringify(allProjects));
 
             render();
         }
@@ -387,7 +509,7 @@ const page = (() => {
     }
 
     return {
-            allProjectsMap,
+            allProjects,
             appendTasks,
             toDoComponentFactory,
             toDoComponentArray,
