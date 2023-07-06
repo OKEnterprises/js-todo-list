@@ -165,14 +165,14 @@ function storableProjectFactory(name: string, ...toDos: StorableToDoItem[]): Sto
     }
 }
 
-function loadAllToDos(): ToDoList {
+const globalToDos: ToDoList = (() => {
     const allToDos: ToDoList = new ToDoList({ list: [] });
     let allProjects: StorableProjectDictionary;
     
     try {
         allProjects = JSON.parse(localStorage.getItem('allProjects'));
     } catch (error) {
-        return allToDos
+        return allToDos;
     }
 
     // Adds all tasks from all projects to a unified ToDoList
@@ -181,30 +181,29 @@ function loadAllToDos(): ToDoList {
     }
 
     return allToDos;
-}
+})();
 
 class Project {
     name: string;
     toDos: ToDoList;
-    static allToDos: ToDoList = loadAllToDos();
     static numProjects = 0;
 
     //New Projects can be initialized with todos.
     constructor(o: StorableProject) {
         this.name = o.name;
         this.toDos = new ToDoList(o.toDos);
-        Project.allToDos.add(...this.toDos.toArray());
+        globalToDos.add(...this.toDos.toArray());
         Project.numProjects++;
     }
 
     //Pushes a ToDoItem to the todos AND all_todos arrays.
     add(item: ToDoItem): boolean {
-        return Project.allToDos.add(item) && this.toDos.add(item);
+        return globalToDos.add(item) && this.toDos.add(item);
     }
 
     //Removes a given ToDoItem from both todos and all_todos.
     remove(toDo: ToDoItem): ToDoItem {
-        Project.allToDos.remove(toDo);
+        globalToDos.remove(toDo);
         return this.toDos.remove(toDo);
     }
 
@@ -409,7 +408,7 @@ const page = (() => {
 
         all.addEventListener('click', () => {
             selectedProjectName = 'All';
-            const tasks = Project.allToDos.toArray();
+            const tasks = globalToDos.toArray();
             const taskComponents = toDoComponentArray(...tasks);
             appendTasks(...taskComponents);
         });
