@@ -141,6 +141,10 @@ class ToDoList {
         }
     }
 
+    set(idx: number, toDo: ToDoItem): void {
+        this.list[idx] = toDo;
+    }
+
     asStorable(): StorableToDoList {
         return {
             list: this.toArray().map(toDo => toDo.asStorable())
@@ -149,7 +153,6 @@ class ToDoList {
 }
 
 // The Project class models a project the user wants to track tasks for.
-// It contains two static fields, allToDos and numProjects.
 // Each Project has its own ToDoList.
 // ToDoItems can be added and removed.
 
@@ -165,35 +168,32 @@ function storableProjectFactory(name: string, ...toDos: StorableToDoItem[]): Sto
     }
 }
 
-const globalToDos: ToDoList = (() => {
-    const allToDos: ToDoList = new ToDoList({ list: [] });
+const globalToDos = new ToDoList({ list: [] });
+
+function loadStoredToDos(): void {
     let allProjects: StorableProjectDictionary;
     
     try {
         allProjects = JSON.parse(localStorage.getItem('allProjects'));
     } catch (error) {
-        return allToDos;
+        return;
     }
 
     // Adds all tasks from all projects to a unified ToDoList
     for (const proj in allProjects) { 
-        allToDos.add(...new Project(allProjects[proj]).toDos.toArray());
+        globalToDos.add(...new Project(allProjects[proj]).toDos.toArray());
     }
-
-    return allToDos;
-})();
+}
 
 class Project {
     name: string;
     toDos: ToDoList;
-    static numProjects = 0;
 
     //New Projects can be initialized with todos.
     constructor(o: StorableProject) {
         this.name = o.name;
         this.toDos = new ToDoList(o.toDos);
         globalToDos.add(...this.toDos.toArray());
-        Project.numProjects++;
     }
 
     //Pushes a ToDoItem to the todos AND all_todos arrays.
@@ -217,6 +217,10 @@ class Project {
 
     get(id: ToDoId): ToDoItem {
         return this.toDos.get(id);
+    }
+
+    set(idx: number, toDo: ToDoItem): void {
+        this.toDos.set(idx, toDo);
     }
 
     asStorable(): StorableProject {
@@ -255,17 +259,8 @@ function storableProjectValues(dict: StorableProjectDictionary): StorableProject
     return res;
 }
 
-const defaultDataToLocalStorage = () => {
-    const defaultToDo: StorableToDoItem = storableToDoItemFactory('brush teeth', 'for 2 min', '2/23/23', '3');
-    const defaultProject: StorableProject = storableProjectFactory('Project 1', defaultToDo);
-    const allProjects: StorableProjectDictionary = storableProjectDictFactory(defaultProject);
-    localStorage.setItem('allProjects', JSON.stringify(allProjects));
-    localStorage.setItem('selectedProjectName', defaultProject.name);
-    localStorage.setItem('selectedToDo', JSON.stringify(defaultToDo.id));
-};
-
 const page = (() => {
-    defaultDataToLocalStorage();
+    loadStoredToDos();
 
     let allProjects: StorableProjectDictionary;
     let selectedProjectName: string;
@@ -275,10 +270,14 @@ const page = (() => {
     try {
         allProjects = JSON.parse(localStorage.getItem('allProjects'));
         selectedProjectName = localStorage.getItem('selectedProjectName');
-        selectedToDo = JSON.parse(localStorage.getItem('selectedToDo'));
+        selectedToDo = JSON.parse(localStorage.getItem('selectedToDo'));``
     } catch (error) {
-        allProjects = {};
-        selectedProjectName = "All";
+        const defaultToDo: StorableToDoItem = storableToDoItemFactory('brush teeth', 'for 2 min', '2/23/23', '3');
+        const defaultProject: StorableProject = storableProjectFactory('Project 1', defaultToDo);
+        const allProjects: StorableProjectDictionary = storableProjectDictFactory(defaultProject);
+        localStorage.setItem('allProjects', JSON.stringify(allProjects));
+        localStorage.setItem('selectedProjectName', defaultProject.name);
+        localStorage.setItem('selectedToDo', JSON.stringify(defaultToDo.id));
     }
 
     const BODY = document.querySelector('body');
@@ -317,7 +316,10 @@ const page = (() => {
             const priority: HTMLInputElement = newTaskForm.querySelector('#priority');
             priority.value = `${toDo.priority}`;
 
-            BODY.append(newTaskForm);
+            const existingTaskForm: NewTaskFormComponent = document.querySelector('#new-task-form');
+            
+            if (existingTaskForm) existingTaskForm.replaceWith(newTaskForm);
+            else BODY.append(newTaskForm);
         });
 
         component.append(description, priority, editButton);
@@ -350,6 +352,8 @@ const page = (() => {
         container.addEventListener('contextmenu', () => {
             const pr: Project = new Project(allProjects[selectedProjectName]);
             pr.remove(toDo);
+            allProjects[selectedProjectName] = pr.asStorable();
+            localStorage.setItem('allProjects', JSON.stringify(allProjects));
             component.remove();
         })
 
@@ -385,6 +389,7 @@ const page = (() => {
     const taskListDisplay = (): HTMLDivElement => {
         const listContainer: HTMLDivElement = document.createElement('div');
         listContainer.classList.add('list-container');
+        listContainer.id = 'task-list-container';
 
         const taskList: HTMLUListElement = document.createElement('ul');
         taskList.id = "task-list";
@@ -397,6 +402,7 @@ const page = (() => {
     const projectListDisplay = (): HTMLDivElement => {
         const listContainer: HTMLDivElement = document.createElement('div');
         listContainer.classList.add('list-container');
+        listContainer.id = 'project-list-container';
 
         const list: HTMLUListElement = document.createElement('ul');
         list.id = 'project-list';
@@ -467,12 +473,13 @@ const page = (() => {
         submit.textContent = 'Submit';
 
         const onSubmit = () => {
-            console.log("onsubmit");
             const proj: Project = new Project(allProjects[selectedProjectName]);
 
             if (editMode) {
                 const toDo = proj.get(selectedToDo);
+                const toDoIdx = proj.indexOf(toDo);
                 toDo.edit(title.value, description.value, dueDate.value, priority.value);
+                proj.set(toDoIdx, toDo);
                 editMode = false;
             } else {
                 const toDo: ToDoItem = new ToDoItem(storableToDoItemFactory(title.value, description.value, dueDate.value, priority.value));
