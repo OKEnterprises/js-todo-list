@@ -237,7 +237,7 @@ function storablesToProjArr(...storables: StorableProject[]): Project[] {
 
 // The Page module renders and tracks events for the page.
 
-type ProjectComponent = HTMLLIElement
+type ProjectComponent = HTMLDivElement
 type ToDoComponent = HTMLLIElement
 type ToDoDetailsComponent = HTMLDivElement
 type AddTaskButtonComponent = HTMLButtonElement
@@ -373,7 +373,7 @@ const page = (() => {
 
     // Takes in a Project object and returns an HTML component for it.
     const projectComponentFactory = (proj: Project): ProjectComponent => {
-        const component = document.createElement('li');
+        const component = document.createElement('div');
         component.id = proj.name;
         component.textContent = proj.name;
 
@@ -404,13 +404,11 @@ const page = (() => {
         listContainer.classList.add('list-container');
         listContainer.id = 'project-list-container';
 
-        const list: HTMLUListElement = document.createElement('ul');
-        list.id = 'project-list';
-
         // 'All' displays the tasks from across all projects.
-        const all: ProjectComponent = document.createElement('li');
-        all.id = 'all';
-        all.textContent = 'All';
+        const all: ProjectComponent = document.createElement('div');
+        all.id = 'all-projects';
+        all.classList.add('project-component');
+        all.textContent = 'All Projects';
 
         all.addEventListener('click', () => {
             selectedProjectName = 'All';
@@ -419,13 +417,14 @@ const page = (() => {
             appendTasks(...taskComponents);
         });
 
-        list.append(all);
+        listContainer.append(all);
 
         // Creates and appends a project component for each project in the projects list.
-        const pl = storablesToProjArr(...storableProjectValues(allProjects));
-        list.append(...projectComponentArray(...pl)); 
+        const projList = storablesToProjArr(...storableProjectValues(allProjects));
+        const compList = projectComponentArray(...projList);
+        compList.forEach(comp => comp.classList.add("project-component"));
+        listContainer.append(...compList); 
 
-        listContainer.append(list);
         return listContainer;
     }
 
